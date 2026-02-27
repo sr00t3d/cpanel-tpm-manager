@@ -2,7 +2,7 @@
 
 Readme: [Português](README.md)
 
-![License](https://img.shields.io/github/license/sr00t3d/named-check-mx-zones)
+![License](https://img.shields.io/github/license/sr00t3d/cpanel-tpm-manager)
 ![Shell Script](https://img.shields.io/badge/language-Bash-green.svg)
 
 <img width="700" src="tmp-manager.webp" />
