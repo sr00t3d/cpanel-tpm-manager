@@ -1,6 +1,6 @@
 # 🛠️ TMP Manager for cPanel
 
-Readme: [Português](README.md)
+Readme: [BR](README.md)
 
 ![License](https://img.shields.io/github/license/sr00t3d/cpanel-tpm-manager)
 ![Shell Script](https://img.shields.io/badge/language-Bash-green.svg)
@@ -42,26 +42,52 @@ O script aprimorado com as seguintes camadas de segurança:
 
 ## 📖 Como Usar
 
-1. **Crie o arquivo no servidor:**
-```bash
-nano /root/tmp-manager.sh
+1. **Baixe o arquivo no servidor:**
 
+```bash
+curl -O https://raw.githubusercontent.com/sr00t3d/cpanel-tpm-manager/refs/heads/main/tmp-manager.sh
 ```
 
-2. **Cole o código do script e salve.**
-3. **Dê permissão de execução:**
-```bash
-chmod +x /root/tmp-manager.sh
+2. **Dê permissão de execução:**
 
+```bash
+chmod +x tmp-manager.sh
 ```
 
-4. **Execute o script:**
-```bash
-./root/tmp-manager.sh
+3. **Execute o script:**
 
+```bash
+./tmp-manager.sh
 ```
 
+Exemplo:
+
+```bash
+./tmp-manager.sh
+
+--- Partition Info ---
+Mount Point: /tmp (/dev/loop0)
+FS Type:     ext4
+Usage:       1.3M / 505M (1%)
+-----------------------
+
+Allocating group tables: done                            
+Writing inode tables: done                            
+Writing superblocks and filesystem accounting information: done
+
+tune2fs 1.46.5 (30-Dec-2021)
+Creating journal inode: done
+Done
+Setting up /tmp... Done
+Setting up /var/tmp... Done
+Checking fstab for entries ...Done
+Process Complete
+Restarting mariadb.service...
+✨ Procedure complete.
 ---
+```
+
+Caso o tmp esteja abaixo do limite ou cheio faz o resize da forma correta.
 
 ## 🏗️ Estrutura do Script
 
@@ -76,13 +102,14 @@ chmod +x /root/tmp-manager.sh
 
 ## ⚠️ Aviso Legal
 
-Este script realiza operações críticas de nível de sistema (montagem/desmontagem de partições e reinicialização de banco de dados). **Sempre valide o backup** antes de confirmar operações de escrita e evite rodar o redimensionamento em horários de pico de tráfego, pois o MySQL/MariaDB será reiniciado.
+> [!WARNING]
+> Este software é fornecido "tal como está". Certifique-se sempre de ter permissão explícita antes de executar. O autor não se responsabiliza por qualquer uso indevido, consequências legais ou impacto nos dados causados ​​por esta ferramenta.
 
-## 📚 Tutorial Detalhado
+## 📚 Detailed Tutorial
 
-Para um guia completo passo a passo, confira meu artigo completo:
+Para um guia completo, passo a passo, confira meu artigo completo:
 
-👉 [**Corrija de forma segurança /tmp em servidor cPanel**](https://perciocastelo.com.br/blog/secure-tmp-properly-on-a-cpanel-server.html)
+👉 [**Corrija de forma segurança /tmp em servidor cPanel**](https://perciocastelo.com.br/blog/secure-resize-tmp-properly-on-a-cpanel-server.html)
 
 ## Licença 📄
 

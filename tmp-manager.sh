@@ -1,9 +1,16 @@
-#!/bin/bash
-# -------------------------------------------------------------------------------
-# Script: tmp_manager.sh
-# Version: 1.0
-# Description: Monitor, resize, and secure /tmp on cPanel servers
-# -------------------------------------------------------------------------------
+#!/usr/bin/env bash
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║                                                                           ║
+# ║   cPanel TMP Manager v1.0.0                                               ║
+# ║                                                                           ║
+# ╠═══════════════════════════════════════════════════════════════════════════╣
+# ║   Autor:   Percio Castelo                                                 ║
+# ║   Contato: percio@evolya.com.br | contato@perciocastelo.com.br            ║
+# ║   Web:     https://perciocastelo.com.br                                   ║
+# ║                                                                           ║
+# ║   Função:  Monitor, resize, and secure /tmp on cPanel servers             ║
+# ║                                                                           ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
 
 # Ensure the script is running as root
 if [[ $EUID -ne 0 ]]; then
