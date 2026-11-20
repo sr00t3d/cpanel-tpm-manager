@@ -1,121 +1,111 @@
-# 🛠️ TMP Manager for cPanel
+# cPanel TMP Manager (`tmp-manager.sh`)
 
-Readme: [EN](README.md)
+Readme: [PT-BR](README-ptbr.md)
 
-![License](https://img.shields.io/github/license/sr00t3d/cpanel-tpm-manager)
-![Shell Script](https://img.shields.io/badge/language-Bash-green.svg)
+![License](https://img.shields.io/github/license/sr00t3d/cpanel-tpm-manager) ![Shell Script](https://img.shields.io/badge/language-Bash-green.svg)
 
-<img width="700" src="tmp-manager.webp" />
+<img width="700" alt="cPanel TMP Manager" src="tmp-manager.webp" />
 
-This Bash script was developed to monitor, clean, and resize the `/tmp` partition on servers running the **cPanel/WHM** control panel. It handles both virtual partitions (**tmpfs**) and physical loopback files (**tmpDSK**).
+A modern, non-destructive Bash utility to monitor `/tmp` and `/var/tmp` disk and inode utilization, audit partition hardening (`noexec`, `nosuid`, `nodev`, `1777` sticky bit), perform zero-downtime age-based cleanup while protecting active sockets and open files, and safely resize `tmpfs` or cPanel `/usr/tmpDSK` (`/scripts/securetmp`) on Linux and cPanel/WHM servers.
 
-## ✨ Features
+## Features (v2.0.0)
 
-* **Real-Time Monitoring:** Checks current `/tmp` usage and displays detailed information.
-* **Threshold Alerts:** Automatically identifies if usage has exceeded 80% (or the configured value).
-* **Smart Cleanup:** Uses `tmpwatch` to remove files with more than 12 hours of inactivity.
-* **Safety Backup:** Creates a full backup of `/tmp` files before resizing (on tmpfs systems).
-* **Service Management:** Automatically stops and restarts MySQL/MariaDB to prevent file locks during unmounting.
-* **Automated Resizing:** Supports the native cPanel `/scripts/securetmp` command.
+* **Full Partition & Hardening Telemetry (`--status`):** Reports mount source, filesystem type, disk `%`, inode `%`, top consumers, sticky bit (`1777`), and `noexec`/`nosuid`/`nodev` mount flags.
+* **Zero-Downtime Safe Cleanup (`--clean`):** Cleans expired files in `/tmp` and `/var/tmp` using native `find` (no `tmpwatch` required), protecting `mysql.sock`, `*.sock`, `systemd-private-*`, `lshttpd`, `hsperfdata_*`, and any file currently held open by a running process (`fuser`).
+* **Non-Interactive & Cron-Ready:** Supports `--dry-run`, `--yes`, `--force`, `--threshold <pct>`, `--age-hours <h>`, and structured `-o json` output with exit code `2` when usage crosses the threshold.
+* **Safe Resize (`--resize`):** Resizes `tmpfs` live via `mount -o remount,size=...` without unmounting or stopping MySQL/MariaDB, or runs cPanel's official `/scripts/securetmp --auto` when explicitly requested.
 
----
+## Prerequisites
 
-## 🚀 Requirements
+* `bash` 4.0+
+* Standard Linux utilities (`df`, `du`, `find`, `stat`, `awk`)
+* `root` privileges for `--clean` and `--resize` (`--status` and `--dry-run` work read-only)
+* Optional: `fuser` (open-file protection), `python3` (`-o json`)
 
-* **Operating System:** CloudLinux / AlmaLinux / Rocky Linux / CentOS (with cPanel).
-* **Privileges:** **root** user access.
-* **Dependencies:** * `tmpwatch` (usually preinstalled on cPanel).
-* `systemd`.
+## Usage & Options
 
----
+```text
+cPanel TMP Manager (tmp-manager.sh) v2.0.0
+Monitor, audit hardening, safely clean, and resize /tmp and /var/tmp on Linux/cPanel servers.
 
-## 🔒 Security and Best Practices
+Usage:
+  tmp-manager.sh [COMMAND] [OPTIONS]
 
-The script has been enhanced with the following security layers:
+Commands:
+  -s, --status              Audit /tmp & /var/tmp disk/inode usage, mount flags, and top files (default)
+  -c, --clean               Safely remove expired files in /tmp & /var/tmp (protects active sockets)
+  -r, --resize [SIZE]       Resize tmpfs (e.g. 2048M) or rebuild cPanel /usr/tmpDSK via securetmp
 
-1. **Root Check:** Prevents execution by users without privileges.
-2. **Lazy Unmount (`-l`):** Prevents the script from hanging if processes are still trying to access the partition.
-3. **Attribute Preservation:** The `cp -a` command ensures that special `/tmp` permissions (Sticky Bit) are maintained in the backup.
-4. **Logging:** All cleanup actions are recorded in `/var/log/tmp-manager.log`.
-
----
-
-## 📖 How to Use
-
-1. **Download the file to the server:**
-
-```bash
-curl -O https://raw.githubusercontent.com/sr00t3d/cpanel-tpm-manager/refs/heads/main/tmp-manager.sh
-
+Options:
+  -t, --threshold <pct>     Alert/trigger usage threshold percentage (default: 80)
+  -a, --age-hours <hours>   Minimum file age in hours for --clean (default: 12)
+  -f, --force               Run --clean even when usage is below --threshold
+  -n, --dry-run             Simulate cleanup or resize without modifying files/mounts
+  -y, --yes                 Skip interactive confirmation prompts (for cron/automation)
+  -o, --output <table|json> Output format (default: table)
+  -q, --quiet               Suppress progress messages
+      --no-color            Disable ANSI colors
 ```
 
-2. **Give execution permission:**
+## Practical Examples
 
+**Audit `/tmp` disk/inode usage and hardening flags:**
 ```bash
-chmod +x tmp-manager.sh
-
+./tmp-manager.sh --status
 ```
 
-3. **Execute the script:**
-
+**Preview cleanup of files older than 12 hours without deleting anything:**
 ```bash
-./tmp-manager.sh
-
+./tmp-manager.sh --clean --dry-run --age-hours 12 --force
 ```
 
-Example:
-
+**Automated cron cleanup when usage reaches 80%:**
 ```bash
-./tmp-manager.sh
-
---- Partition Info ---
-Mount Point: /tmp (/dev/loop0)
-FS Type:     ext4
-Usage:       1.3M / 505M (1%)
------------------------
-
-Allocating group tables: done                            
-Writing inode tables: done                            
-Writing superblocks and filesystem accounting information: done
-
-tune2fs 1.46.5 (30-Dec-2021)
-Creating journal inode: done
-Done
-Setting up /tmp... Done
-Setting up /var/tmp... Done
-Checking fstab for entries ...Done
-Process Complete
-Restarting mariadb.service...
-✨ Procedure complete.
----
+sudo ./tmp-manager.sh --clean --threshold 80 --age-hours 12 -y
 ```
 
-If the tmp is below the limit or full, resize it correctly.
+**Live resize a `tmpfs` `/tmp` partition to 2048M:**
+```bash
+sudo ./tmp-manager.sh --resize 2048M -y
+```
+
+## Real Output Example
+
+```text
+================================================================================
+ CPANEL TMP MANAGER v2.0.0 - [cpanel-test.local]
+================================================================================
+ Mount Point  : /tmp (overlay, overlay)
+ Disk Usage   : 75G / 99G (80% used, 20G avail) | Threshold: 80%
+ Inode Usage  : 14%
+ Permissions  : 1777 (expected: 1777)
+ Mount Flags  : inherited
+ Hardening    : NOT FULL HARDENED (check noexec,nosuid,nodev)
+ Health State : ALERT
+--------------------------------------------------------------------------------
+ Top Consumers in /tmp:
+   4.0K	/tmp/mariadb-test.log
+================================================================================
+
+================================================================================
+ CPANEL TMP MANAGER v2.0.0 - CLEANUP SUMMARY
+================================================================================
+ Age Filter           : > 12 hour(s)
+ Files Removed        : 2
+ Open Files Protected : 0
+ Space Reclaimed      : 2.00 MB
+================================================================================
+```
+
+## Detailed Tutorial
+
+Read the full walkthrough: [**How to Secure `/tmp` Properly on a cPanel Server**](https://perciocastelo.com.br/blog/secure-tmp-properly-on-a-cpanel-server.html)
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
 
 ---
-
-## 🏗️ Script Structure
-
-| Variable | Description |
-| --- | --- |
-| `TMP_ALERT_ENABLED` | Defines whether the script should suggest corrections based on usage (Default: `true`). |
-| `ALERT_THRESHOLD` | Usage percentage that triggers the alert (Default: `80`). |
-| `LOG_FILE` | Location where `tmpwatch` logs are saved. |
-| `BACKUP_DIR` | Temporary directory in `/root` for file safekeeping. |
-
----
-
-## ⚠️ Legal Notice
-
-> [!WARNING]
-> This software is provided "as is". Always ensure you have explicit permission before running. The author is not responsible for any misuse, legal consequences, or data impact caused by this tool.
-
-## 📚 Detailed Tutorial
-
-For a complete, step-by-step guide, check out my full article:
-
-👉 [**Securely resize tmp on a cPanel server**](https://perciocastelo.com.br/blog/secure-resize-tmp-properly-on-a-cpanel-server.html)
-
-## License 📄
-
-This project is licensed under the **GNU General Public License v3.0**. See the [LICENSE](LICENSE) file for details.
+Author: **Percio Castelo**  
+Contact: [contato@perciocastelo.com.br](mailto:contato@perciocastelo.com.br)  
+Website: [https://perciocastelo.com.br](https://perciocastelo.com.br)
